@@ -30,6 +30,7 @@ Compile the C code:
 * For Window:
 
 cd protoc_gen_lua
+
 python genProtoc.py PBSrcDir outDir
 
 --------------------------------
