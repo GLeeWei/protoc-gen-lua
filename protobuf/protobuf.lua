@@ -749,20 +749,20 @@ local function _AddIsInitializedMethod(message_descriptor, message_meta)
 
         for _,field in ipairs(required_fields) do
             if not message_meta._member.HasField(self, field.name) then
-                errors.append(field.name) 
+                table.insert(errors, field.name)
             end
         end
 
         for field, value in message_meta._member.ListFields(self) do
             if field.cpp_type == FieldDescriptor.CPPTYPE_MESSAGE then
                 if field.is_extension then
-                    name = io:format("(%s)", field.full_name)
+                    name = string.format("(%s)", field.full_name)
                 else
                     name = field.name
                 end
                 if field.label == FieldDescriptor.LABEL_REPEATED then
                     for i, element in ipairs(value) do
-                        prefix = io:format("%s[%d].", name, i)
+                        prefix = string.format("%s[%d].", name, i)
                         sub_errors = element:FindInitializationErrors()
                         for _, e in ipairs(sub_errors) do
                             errors[#errors + 1] = prefix .. e
@@ -806,6 +806,12 @@ local function _AddMergeFromMethod(message_meta)
     end
 end
 
+local function _AddDescriptorTypeMethod(message_descriptor, message_meta)
+    message_meta._member.DescriptorType = function(self)
+        return message_descriptor.name
+    end
+end
+
 local function _AddMessageMethods(message_descriptor, message_meta)
     _AddListFieldsMethod(message_descriptor, message_meta)
     _AddHasFieldMethod(message_descriptor, message_meta)
@@ -824,6 +830,8 @@ local function _AddMessageMethods(message_descriptor, message_meta)
     _AddMergeFromStringMethod(message_descriptor, message_meta)
     _AddIsInitializedMethod(message_descriptor, message_meta)
     _AddMergeFromMethod(message_meta)
+
+    _AddDescriptorTypeMethod(message_descriptor,message_meta)
 end
 
 local function _AddPrivateHelperMethods(message_meta)

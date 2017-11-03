@@ -26,13 +26,40 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#ifdef _ALLBSD_SOURCE
-#include <machine/endian.h>
+#include <sys/types.h> /* This will likely define BYTE_ORDER */
+
+#ifndef BYTE_ORDER
+#if (BSD >= 199103)
+# include <machine/endian.h>
 #else
-#include <endian.h>
+#if defined(linux) || defined(__linux__)
+# include <endian.h>
+#else
+#define LITTLE_ENDIAN   1234    /* least-significant byte first (vax, pc) */
+#define BIG_ENDIAN  4321    /* most-significant byte first (IBM, net) */
+#define PDP_ENDIAN  3412    /* LSB first in word, MSW first in long (pdp)*/
+
+#if defined(__i386__) || defined(__x86_64__) || defined(__amd64__) || \
+defined(vax) || defined(ns32000) || defined(sun386) || \
+defined(MIPSEL) || defined(_MIPSEL) || defined(BIT_ZERO_ON_RIGHT) || \
+defined(__alpha__) || defined(__alpha)
+#define BYTE_ORDER    LITTLE_ENDIAN
 #endif
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if defined(sel) || defined(pyr) || defined(mc68000) || defined(sparc) || \
+defined(is68k) || defined(tahoe) || defined(ibm032) || defined(ibm370) || \
+defined(MIPSEB) || defined(_MIPSEB) || defined(_IBMR2) || defined(DGUX) ||\
+defined(apollo) || defined(__convex__) || defined(_CRAY) || \
+defined(__hppa) || defined(__hp9000) || \
+defined(__hp9000s300) || defined(__hp9000s700) || \
+defined (BIT_ZERO_ON_LEFT) || defined(m68k) || defined(__sparc)
+#define BYTE_ORDER  BIG_ENDIAN
+#endif
+#endif /* linux */
+#endif /* BSD */
+#endif /* BYTE_ORDER */
+
+#if !defined(BYTE_ORDER) || (BYTE_ORDER == LITTLE_ENDIAN)
 #define IS_LITTLE_ENDIAN
 #endif
 
@@ -335,13 +362,13 @@ static const uint8_t* unpack_fixed64(const uint8_t* buffer, uint8_t* cache)
 
 static int struct_unpack(lua_State *L)
 {
-    uint8_t format = luaL_checkinteger(L, 1);
+	uint8_t out[8];
+	uint8_t format = luaL_checkinteger(L, 1);
     size_t len;
     const uint8_t* buffer = (uint8_t*)luaL_checklstring(L, 2, &len);
     size_t pos = luaL_checkinteger(L, 3);
 
     buffer += pos;
-    uint8_t out[8];
     switch(format){
         case 'i':
             {
@@ -437,7 +464,7 @@ static int iostring_clear(lua_State* L)
     return 0;
 }
 
-static const struct luaL_reg _pb [] = {
+static const struct luaL_Reg _pb [] = {
     {"varint_encoder", varint_encoder},
     {"signed_varint_encoder", signed_varint_encoder},
     {"read_tag", read_tag},
@@ -453,7 +480,7 @@ static const struct luaL_reg _pb [] = {
     {NULL, NULL}
 };
 
-static const struct luaL_reg _c_iostring_m [] = {
+static const struct luaL_Reg _c_iostring_m [] = {
     {"__tostring", iostring_str},
     {"__len", iostring_len},
     {"write", iostring_write},
@@ -468,6 +495,8 @@ int luaopen_pb (lua_State *L)
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
     luaL_register(L, NULL, _c_iostring_m);
+    /* remove metatable from stack */
+    lua_pop(L, 1);
 
     luaL_register(L, "pb", _pb);
     return 1;
