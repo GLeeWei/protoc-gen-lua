@@ -15,17 +15,24 @@ checkout the code.
 
 Compile the C code:
 
-`$cd protobuf  && make`
+* For Linux or Mac:
 
-Make a link to protoc-gen-lua  in your $PATH:
+ `$cd protobuf  && make`
 
-`$cd /usr/local/bin && sudo ln -s /path/to/protoc-gen-lua/plugin/protoc-gen-lua`
+ Make a link to protoc-gen-lua  in your $PATH:
 
-Then you can compile the .proto like this:
+ `$cd /usr/local/bin && sudo ln -s /path/to/protoc-gen-lua/plugin/protoc-gen-lua`
 
-`protoc --lua_out=./ foo.proto`
+ Then you can compile the .proto like this:
 
+ `protoc --lua_out=./ foo.proto`
 
+* For Window:
+
+$ cd protoc_gen_lua
+$ python genProtoc.py PBSrcDir outDir
+
+--------------------------------
 ## Quick Example
 You write a .proto file like this:
 
